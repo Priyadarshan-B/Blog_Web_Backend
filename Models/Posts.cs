@@ -19,4 +19,7 @@ public class Post
     public string UserId { get; set; } = "";
 
     public string AuthorName { get; set; } = "";
+
+    public int Likes { get; set; } = 0;
+    public int CommentCount { get; set; } = 0;
 }

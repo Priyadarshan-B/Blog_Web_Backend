@@ -1,10 +1,12 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddSingleton<PostService>();
 builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<FollowerService>();
+
 
 
 builder.Services.AddControllers();
@@ -20,6 +22,11 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 
 
 var app = builder.Build();

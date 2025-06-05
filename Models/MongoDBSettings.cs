@@ -4,4 +4,7 @@ public class MongoDbSettings
     public string DatabaseName { get; set; }
     public string PostCollection { get; set; } = default!;
     public string UserCollection { get; set; } = default!;
+    public string CommentCollection { get; set; } = default!;
+    public string FollowerCollection { get; set; } = default!;
+
 }

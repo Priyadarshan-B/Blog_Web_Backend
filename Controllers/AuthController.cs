@@ -23,6 +23,13 @@ public class AuthController : ControllerBase
     [HttpPost("google")]
     public async Task<IActionResult> GoogleSignIn([FromBody] GoogleLoginRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            return BadRequest(new { message = "IdToken is missing or null" });
+        }
+        Console.WriteLine("Received token: " + request.IdToken?.Substring(0, 20));
+       
+
         try
         {
             var user = await _userService.SignInWithGoogleAsync(request.IdToken);
@@ -35,7 +42,7 @@ public class AuthController : ControllerBase
     new Claim(JwtRegisteredClaimNames.Email, user.Email),
     new Claim("name", user.DisplayName),
     new Claim("id", user.Id),
-    new Claim("picture", user.PictureUrl)
+    new Claim("picture", user.PictureUrl ?? string.Empty)
 };
 
             var tokenDescriptor = new SecurityTokenDescriptor

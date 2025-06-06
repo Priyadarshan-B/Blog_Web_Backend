@@ -1,20 +1,36 @@
 using MongoDB.Driver;
 using Microsoft.Extensions.Options;
-
+using Supabase;
+using System.IO;
+using Microsoft.Extensions.Configuration; 
 
 public class PostService
 {
     private readonly IMongoCollection<Post> _posts;
     private readonly IMongoCollection<Comment> _comments;
+    private readonly Supabase.Client _supabaseClient;
+    private readonly IConfiguration _configuration; 
 
-    public PostService(IOptions<MongoDbSettings> settings)
+    public PostService(IOptions<MongoDbSettings> settings, IConfiguration configuration)
     {
         var client = new MongoClient(settings.Value.ConnectionString);
         var database = client.GetDatabase(settings.Value.DatabaseName);
         _posts = database.GetCollection<Post>(settings.Value.PostCollection);
         _comments = database.GetCollection<Comment>(settings.Value.CommentCollection);
+
+        // Initialize _configuration here
+        _configuration = configuration;
+
+        var supabaseUrl = _configuration["Supabase:Url"];
+        var supabaseKey = _configuration["Supabase:Key"];
+        if (string.IsNullOrEmpty(supabaseUrl) || string.IsNullOrEmpty(supabaseKey))
+        {
+            throw new ArgumentNullException("Supabase:Url or Supabase:Key is not configured in appsettings.json.");
+        }
+        _supabaseClient = new Supabase.Client(supabaseUrl, supabaseKey);
     }
-    //post
+
+    // Post operations
     public async Task<Post> CreatePostAsync(Post post)
     {
         await _posts.InsertOneAsync(post);
@@ -25,14 +41,16 @@ public class PostService
     {
         return await _posts.Find(_ => true).SortByDescending(p => p.CreatedAt).ToListAsync();
     }
-    //Post by id
+
+    // Post by id
     public async Task<Post?> GetPostByIdAsync(string id)
     {
         return await _posts.Find(p => p.Id == id).FirstOrDefaultAsync();
     }
-    //comment
+
+    // Comment operations
     public async Task<List<Comment>> GetCommentsForPostAsync(string postId) =>
-    await _comments.Find(c => c.PostId == postId).SortByDescending(c => c.CreatedAt).ToListAsync();
+        await _comments.Find(c => c.PostId == postId).SortByDescending(c => c.CreatedAt).ToListAsync();
 
     public async Task<Comment> AddCommentAsync(Comment comment)
     {
@@ -41,10 +59,34 @@ public class PostService
         await _posts.UpdateOneAsync(p => p.Id == comment.PostId, update);
         return comment;
     }
-//like
+
+    // Like operation
     public async Task LikePostAsync(string postId)
     {
         var update = Builders<Post>.Update.Inc(p => p.Likes, 1);
         await _posts.UpdateOneAsync(p => p.Id == postId, update);
+    }
+
+    public async Task<string> UploadImageToSupabaseAsync(Stream fileStream, string fileName, string contentType)
+    {
+        // Use the already initialized _supabaseClient
+        // var supabaseUrl = _configuration["Supabase:Url"]; // Not needed here
+        // var supabaseKey = _configuration["Supabase:Key"]; // Not needed here
+        // var supabase = new Supabase.Client(supabaseUrl!, supabaseKey!); // Not needed here
+        await _supabaseClient.InitializeAsync(); // Initialize the existing client if not already
+
+        var bucket = _supabaseClient.Storage.From("blog-web");
+
+        using var memoryStream = new MemoryStream();
+        await fileStream.CopyToAsync(memoryStream);
+        byte[] fileBytes = memoryStream.ToArray();
+
+        await bucket.Upload(fileBytes, fileName, new Supabase.Storage.FileOptions
+        {
+            Upsert = true,
+            ContentType = contentType
+        });
+
+        return bucket.GetPublicUrl(fileName);
     }
 }

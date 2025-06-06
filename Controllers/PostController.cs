@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using System.Text.Json;
+using System.IO;
+//using Blog_Web_Backend.Models;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -12,10 +16,22 @@ public class PostController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreatePost([FromBody] Post post)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> CreatePost([FromForm] Post post, IFormFile? imageFile)
     {
+        if (imageFile != null && imageFile.Length > 0)
+        {
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
+
+            using var stream = imageFile.OpenReadStream();
+            var imageUrl = await _postService.UploadImageToSupabaseAsync(stream, fileName, imageFile.ContentType);
+            post.ImageUrl = imageUrl;
+        }
+
+        post.CreatedAt = DateTime.UtcNow;
+
         var created = await _postService.CreatePostAsync(post);
-        return CreatedAtAction(nameof(GetAllPosts), new { id = created.Id }, created);
+        return CreatedAtAction(nameof(GetPostById), new { id = created.Id }, created);
     }
 
     [HttpGet]

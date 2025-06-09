@@ -42,6 +42,12 @@ public class PostService
         return await _posts.Find(_ => true).SortByDescending(p => p.CreatedAt).ToListAsync();
     }
 
+    public async Task<List<Post>> GetPostsByPreferenceAsync(string preference)
+    {
+        var filter = Builders<Post>.Filter.AnyEq(p => p.Preferences, preference);
+        return await _posts.Find(filter).SortByDescending(p => p.CreatedAt).ToListAsync();
+    }
+
     // Post by id
     public async Task<Post?> GetPostByIdAsync(string id)
     {
@@ -69,11 +75,8 @@ public class PostService
 
     public async Task<string> UploadImageToSupabaseAsync(Stream fileStream, string fileName, string contentType)
     {
-        // Use the already initialized _supabaseClient
-        // var supabaseUrl = _configuration["Supabase:Url"]; // Not needed here
-        // var supabaseKey = _configuration["Supabase:Key"]; // Not needed here
-        // var supabase = new Supabase.Client(supabaseUrl!, supabaseKey!); // Not needed here
-        await _supabaseClient.InitializeAsync(); // Initialize the existing client if not already
+       
+        await _supabaseClient.InitializeAsync(); 
 
         var bucket = _supabaseClient.Storage.From("blog-web");
 

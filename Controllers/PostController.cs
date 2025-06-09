@@ -41,6 +41,13 @@ public class PostController : ControllerBase
         return Ok(posts);
     }
 
+    [HttpGet("preference/{topic}")]
+    public async Task<IActionResult> GetPostsByPreference(string topic)
+    {
+        var posts = await _postService.GetPostsByPreferenceAsync(topic);
+        return Ok(posts);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPostById(string id)
     {

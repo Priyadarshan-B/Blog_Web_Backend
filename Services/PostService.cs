@@ -44,9 +44,10 @@ public class PostService
 
     public async Task<List<Post>> GetPostsByPreferenceAsync(string preference)
     {
-        var filter = Builders<Post>.Filter.AnyEq(p => p.Preferences, preference);
+        var filter = Builders<Post>.Filter.AnyEq("Preferences", preference);
         return await _posts.Find(filter).SortByDescending(p => p.CreatedAt).ToListAsync();
     }
+
 
     // Post by id
     public async Task<Post?> GetPostByIdAsync(string id)

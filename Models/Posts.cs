@@ -21,7 +21,7 @@ public class Post
 
     public string AuthorName { get; set; } = "";
 
-    public List<string> Preferences { get; set; } = new();
+    public List<string> Preferences { get; set; } = new List<string>();
 
     public int Likes { get; set; } = 0;
     public int CommentCount { get; set; } = 0;

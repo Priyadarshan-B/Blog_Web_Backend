@@ -1,6 +1,7 @@
 using Google.Apis.Auth;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using Blog_Web_Backend.DTOs;
 
 public class UserService
 {
@@ -27,21 +28,12 @@ public class UserService
             Console.WriteLine("Attempting to validate Google ID token...");
             payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
             Console.WriteLine("Google ID token validated successfully.");
-
-            // Log important payload details to see what's actually present
-            Console.WriteLine($"Payload Subject (GoogleId): {payload.Subject ?? "NULL"}");
-            Console.WriteLine($"Payload Email: {payload.Email ?? "NULL"}");
-            Console.WriteLine($"Payload Name (DisplayName): {payload.Name ?? "NULL"}");
-            Console.WriteLine($"Payload PictureUrl: {payload.Picture ?? "NULL"}");
         }
         catch (Exception ex)
         {
             Console.WriteLine("Google token validation failed: " + ex.Message);
-            // Re-throw with more context or a specific exception type
             throw new InvalidOperationException("Google ID token validation failed.", ex);
         }
-
-        // Essential null check for payload.Subject and payload.Email
         if (string.IsNullOrEmpty(payload.Subject))
         {
             Console.WriteLine("ERROR: Google ID (Subject) is missing from the token payload.");
@@ -53,7 +45,6 @@ public class UserService
             throw new InvalidOperationException("Email is missing from the token payload.");
         }
 
-        Console.WriteLine($"Searching for user with GoogleId: {payload.Subject}");
         var user = await _users.Find(u => u.GoogleId == payload.Subject).FirstOrDefaultAsync();
 
         if (user == null)
@@ -72,7 +63,6 @@ public class UserService
         else
         {
             Console.WriteLine($"Existing user found: {user.Id}");
-            // Optionally, update existing user's details if they've changed in Google
             bool updated = false;
             if (user.DisplayName != payload.Name && payload.Name != null)
             {
@@ -102,4 +92,45 @@ public class UserService
 
         return user;
     }
+
+    public async Task<User?> GetUserByIdAsync(string id) =>
+        await _users.Find(u => u.Id == id).FirstOrDefaultAsync();
+
+    public async Task<User?> GetUserByGoogleIdAsync(string googleId) =>
+        await _users.Find(u => u.GoogleId == googleId).FirstOrDefaultAsync();
+
+    public async Task<List<User>> GetAllUsersAsync() =>
+        await _users.Find(_ => true).ToListAsync();
+
+    public async Task CreateUserAsync(User user) =>
+        await _users.InsertOneAsync(user);
+
+    public async Task<bool> UpdateUserFieldsAsync(string id, UserUpdateDto updateDto)
+    {
+        var updates = new List<UpdateDefinition<User>>();
+
+        if (!string.IsNullOrWhiteSpace(updateDto.Email))
+            updates.Add(Builders<User>.Update.Set(u => u.Email, updateDto.Email));
+
+        if (!string.IsNullOrWhiteSpace(updateDto.DisplayName))
+            updates.Add(Builders<User>.Update.Set(u => u.DisplayName, updateDto.DisplayName));
+
+        if (!string.IsNullOrWhiteSpace(updateDto.PictureUrl))
+            updates.Add(Builders<User>.Update.Set(u => u.PictureUrl, updateDto.PictureUrl));
+
+        if (!updates.Any())
+            return false; 
+
+        var combinedUpdate = Builders<User>.Update.Combine(updates);
+
+        var result = await _users.UpdateOneAsync(u => u.Id == id, combinedUpdate);
+
+        return result.ModifiedCount > 0;
+    }
+
+
+    public async Task<bool> UserExistsByGoogleIdAsync(string googleId) =>
+        await _users.Find(u => u.GoogleId == googleId).AnyAsync();
+
 }
+

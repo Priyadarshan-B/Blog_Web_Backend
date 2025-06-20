@@ -65,8 +65,11 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Invalid token", error = ex.Message });
         }
     }
+   
 
 }
+
+
 public class GoogleLoginRequest
 {
     public string IdToken { get; set; } = default!;

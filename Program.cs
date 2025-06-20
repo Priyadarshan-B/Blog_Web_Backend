@@ -10,6 +10,8 @@ builder.Services.AddSingleton<PreferenceService>();
 
 
 
+
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

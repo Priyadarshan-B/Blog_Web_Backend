@@ -74,12 +74,11 @@ public class PostService
         await _posts.UpdateOneAsync(p => p.Id == postId, update);
     }
 
-    public async Task<string> UploadImageToSupabaseAsync(Stream fileStream, string fileName, string contentType)
+    public async Task<string> UploadImageToSupabaseAsync(Stream fileStream, string fileName, string contentType, string bucketName = "blog-web")
     {
-       
-        await _supabaseClient.InitializeAsync(); 
+        await _supabaseClient.InitializeAsync();
 
-        var bucket = _supabaseClient.Storage.From("blog-web");
+        var bucket = _supabaseClient.Storage.From(bucketName);
 
         using var memoryStream = new MemoryStream();
         await fileStream.CopyToAsync(memoryStream);
@@ -92,5 +91,11 @@ public class PostService
         });
 
         return bucket.GetPublicUrl(fileName);
+    }
+
+    public async Task<List<Post>> GetPostsByUserIdAsync(string userId)
+    {
+        var filter = Builders<Post>.Filter.Eq(p => p.UserId, userId);
+        return await _posts.Find(filter).SortByDescending(p => p.CreatedAt).ToListAsync();
     }
 }

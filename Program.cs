@@ -7,7 +7,7 @@ builder.Services.AddSingleton<PostService>();
 builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<FollowerService>();
 builder.Services.AddSingleton<PreferenceService>();
-
+builder.Services.AddSingleton<UserPreferenceService>();
 
 
 

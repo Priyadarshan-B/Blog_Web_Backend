@@ -7,6 +7,5 @@ public class MongoDbSettings
     public string CommentCollection { get; set; } = default!;
     public string FollowerCollection { get; set; } = default!;
     public string PreferenceCollection { get; set; } = "Preferences";
-
-
+    public string UserPreferenceCollection { get; set; } = "UserPreferences";
 }

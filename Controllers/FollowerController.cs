@@ -25,18 +25,18 @@ public class FollowerController : ControllerBase
         return Ok(new { success = true });
     }
 
-    [HttpGet("followers/{userId}")]
+    [HttpGet("{userId}/followers")]
     public async Task<IActionResult> GetFollowers(string userId)
     {
-        var followers = await _followerService.GetFollowersAsync(userId);
-        return Ok(followers);
+        var (followers, count) = await _followerService.GetFollowersWithDetailsAsync(userId);
+        return Ok(new { count, followers });
     }
 
-    [HttpGet("following/{userId}")]
+    [HttpGet("{userId}/following")]
     public async Task<IActionResult> GetFollowing(string userId)
     {
-        var following = await _followerService.GetFollowingAsync(userId);
-        return Ok(following);
+        var (following, count) = await _followerService.GetFollowingWithDetailsAsync(userId);
+        return Ok(new { count, following });
     }
 
     [HttpGet("isfollowing")]

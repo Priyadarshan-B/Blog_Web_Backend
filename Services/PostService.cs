@@ -2,7 +2,8 @@ using MongoDB.Driver;
 using Microsoft.Extensions.Options;
 using Supabase;
 using System.IO;
-using Microsoft.Extensions.Configuration; 
+using Microsoft.Extensions.Configuration;
+
 
 public class PostService
 {
@@ -37,15 +38,19 @@ public class PostService
         return post;
     }
 
+   
+
     public async Task<List<Post>> GetAllPostsAsync()
     {
         return await _posts.Find(_ => true).SortByDescending(p => p.CreatedAt).ToListAsync();
     }
 
-    public async Task<List<Post>> GetPostsByPreferenceAsync(string preference)
+    public async Task<List<Post>> GetPostsByPreferencesAsync(List<string> preferences)
     {
-        var filter = Builders<Post>.Filter.AnyEq("Preferences", preference);
-        return await _posts.Find(filter).SortByDescending(p => p.CreatedAt).ToListAsync();
+        var filter = Builders<Post>.Filter.AnyIn(p => p.Preferences, preferences);
+        return await _posts.Find(filter)
+                           .SortByDescending(p => p.CreatedAt)
+                           .ToListAsync();
     }
 
 

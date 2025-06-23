@@ -2,12 +2,11 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.Text.Json.Serialization;
 
-
 public class Post
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] 
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Id { get; set; }
 
     public string Title { get; set; } = "";
@@ -21,7 +20,7 @@ public class Post
 
     public string AuthorName { get; set; } = "";
 
-    public List<string> Preferences { get; set; } = new List<string>();
+    public List<string> Preferences { get; set; } = new();
 
     public int Likes { get; set; } = 0;
     public int CommentCount { get; set; } = 0;

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using System.IO;
+using Blog_Web_Backend.DTOs;
 //using Blog_Web_Backend.Models;
 
 [ApiController]
@@ -14,25 +15,33 @@ public class PostController : ControllerBase
     {
         _postService = postService;
     }
-
     [HttpPost]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> CreatePost([FromForm] Post post, IFormFile? imageFile)
+    public async Task<IActionResult> CreatePost([FromForm] CreatePostDto dto, IFormFile? imageFile)
     {
+        var post = new Post
+        {
+            Title = dto.Title,
+            Content = dto.Content,
+            UserId = dto.UserId ?? "",
+            AuthorName = dto.AuthorName,
+            CreatedAt = DateTime.UtcNow,
+            Preferences = ParsePreferences(dto.Preferences),
+            ImageUrl = dto.ImageUrl 
+        };
+
         if (imageFile != null && imageFile.Length > 0)
         {
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
 
             using var stream = imageFile.OpenReadStream();
-            var imageUrl = await _postService.UploadImageToSupabaseAsync(stream, fileName, imageFile.ContentType);
-            post.ImageUrl = imageUrl;
+            post.ImageUrl = await _postService.UploadImageToSupabaseAsync(stream, fileName, imageFile.ContentType);
         }
-
-        post.CreatedAt = DateTime.UtcNow;
-
+        
         var created = await _postService.CreatePostAsync(post);
         return CreatedAtAction(nameof(GetPostById), new { id = created.Id }, created);
     }
+
 
     [HttpGet]
     public async Task<IActionResult> GetAllPosts()
@@ -41,13 +50,22 @@ public class PostController : ControllerBase
         return Ok(posts);
     }
 
-    [HttpGet("preference/{topic}")]
-    public async Task<IActionResult> GetPostsByPreference(string topic)
+    //[HttpGet("preference/{topic}")]
+    //public async Task<IActionResult> GetPostsByPreference(string topic)
+    //{
+    //    var posts = await _postService.GetPostsByPreferenceAsync(topic);
+    //    return Ok(posts);
+    //}
+
+    [HttpPost("preference")]
+    public async Task<IActionResult> GetPostsByPreferenceByList([FromBody] PreferenceRequest request)
     {
-        var posts = await _postService.GetPostsByPreferenceAsync(topic);
+        if (request.Preferences == null || !request.Preferences.Any())
+            return BadRequest("Preferences are required.");
+
+        var posts = await _postService.GetPostsByPreferencesAsync(request.Preferences);
         return Ok(posts);
     }
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPostById(string id)
     {
@@ -88,5 +106,18 @@ public class PostController : ControllerBase
         return Ok(posts);
     }
 
+    private List<string> ParsePreferences(string input)
+    {
+        try
+        {
+            if (input.Trim().StartsWith("["))
+            {
+                return JsonSerializer.Deserialize<List<string>>(input) ?? new();
+            }
+        }
+        catch { }
+
+        return input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+    }
 
 }

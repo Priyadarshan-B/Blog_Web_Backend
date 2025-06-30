@@ -45,14 +45,15 @@ public class PostService
         return await _posts.Find(_ => true).SortByDescending(p => p.CreatedAt).ToListAsync();
     }
 
-    public async Task<List<Post>> GetPostsByPreferencesAsync(List<string> preferences)
+    public async Task<List<Post>> GetPostsByPreferencesAsync(List<string> selectedTopics)
     {
-        var filter = Builders<Post>.Filter.AnyIn(p => p.Preferences, preferences);
+        var uniqueTopics = selectedTopics.Distinct().ToList();
+        var filter = Builders<Post>.Filter.AnyIn(p => p.Preferences, uniqueTopics);
+
         return await _posts.Find(filter)
                            .SortByDescending(p => p.CreatedAt)
                            .ToListAsync();
     }
-
 
     // Post by id
     public async Task<Post?> GetPostByIdAsync(string id)
